@@ -12,11 +12,22 @@ const authReducer = (state, action) => {
       return { ...state, errorMessage: "", token: action.payload };
     case "clear_error_message":
       return { ...state, errorMessage: "" };
+    case "singout":
+      return { ...state, token: null };
     default:
       return state;
   }
 };
 
+const tryLocalSignin = dispatch => async () => {
+  const token = await AsyncStorage.getItem("token");
+  if (token) {
+    dispatch({ type: "signin", payload: token });
+    navigate("TrackList");
+  } else {
+    navigate("Signup");
+  }
+};
 const signup = dispatch => async ({ email, password }) => {
   trackeApi
     .post("/signup", { email, password })
@@ -58,12 +69,16 @@ const signin = dispatch => ({ email, password }) => {
 };
 
 const signout = dispatch => {
-  return () => {};
+  return async () => {
+    await AsyncStorage.removeItem("token");
+    dispatch({ type: "singout" });
+    navigate("loginFlow");
+  };
 };
 
 export const { Provider, Context } = createDataContext(
   authReducer,
-  { signup, signin, signout, clearErrorMessage },
+  { signup, signin, signout, clearErrorMessage, tryLocalSignin },
   {
     isSignId: false,
     errorMessage: "",
